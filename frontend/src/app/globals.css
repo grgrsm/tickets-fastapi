@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { background: #fefeff; color: #111013; -webkit-text-size-adjust: 100%; }
+  body { @apply min-h-screen overflow-x-hidden font-sans antialiased; }
+  :focus-visible { outline: 3px solid #895aeb; outline-offset: 2px; }
+  .on-accent :focus-visible { outline-color: #fefeff; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-ink/10 bg-surface p-5 shadow-[0_1px_2px_rgba(17,16,19,0.04)] sm:p-6; }
+  .field { @apply w-full rounded-lg border border-ink/20 bg-surface px-3.5 py-3 text-base text-ink placeholder:text-ink/40; }
+  .field:focus-visible { outline: none; border-color: #895aeb; box-shadow: 0 0 0 3px rgba(137, 90, 235, 0.25); }
+  .field[aria-invalid="true"] { @apply border-red-700; }
+  .field[aria-invalid="true"]:focus-visible { border-color: #b91c1c; box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.2); }
+  .label { @apply mb-1.5 block text-sm font-medium text-ink; }
+  .error-text { @apply mt-1.5 text-sm text-red-800; }
+  .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-5 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-primary { @apply btn text-surface; background-image: linear-gradient(135deg, #895aeb 0%, #6b3fd1 100%); }
+  .btn-primary:hover:not(:disabled) { background-image: linear-gradient(135deg, #7d4be0 0%, #5a31b8 100%); }
+  .hero-gradient {
+    background-color: #4a2a9a;
+    background-image:
+      radial-gradient(60rem 28rem at 85% -10%, rgba(254, 254, 255, 0.22), transparent 60%),
+      radial-gradient(40rem 24rem at 0% 100%, rgba(17, 16, 19, 0.55), transparent 65%),
+      linear-gradient(150deg, #895aeb 0%, #6b3fd1 50%, #34196f 100%);
+  }
+  .accent-gradient {
+    background-image:
+      radial-gradient(24rem 10rem at 100% 0%, rgba(254, 254, 255, 0.22), transparent 60%),
+      linear-gradient(135deg, #895aeb 0%, #5a31b8 100%);
+  }
+  .btn-ghost { @apply btn border border-ink/20 bg-surface text-ink hover:bg-ink/5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
