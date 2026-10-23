@@ -34,5 +34,5 @@ async def list_events(session: AsyncSession = Depends(get_session)):
 async def get_event(event_id: int, session: AsyncSession = Depends(get_session)):
     event = await event_repository.get_event(session, event_id)
     if event is None:
-        raise EventNotFound("Событие не найдено")
+        raise EventNotFound("Event not found")
     return to_event_out(event)

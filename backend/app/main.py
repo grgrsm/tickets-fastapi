@@ -7,7 +7,7 @@ from app.api.routes import bookings, events
 from app.core.config import settings
 from app.exceptions import AppError
 
-app = FastAPI(title="Бронирование билетов", version="1.0.0")
+app = FastAPI(title="Ticket booking", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.cors_origin_list,
@@ -36,27 +36,27 @@ async def validation_handler(_: Request, exc: RequestValidationError):
     for err in exc.errors():
         loc = [str(x) for x in err["loc"] if x != "body"]
         msg = str(err["msg"]).removeprefix("Value error, ")
-        details.append({"field": ".".join(loc), "message": _ru(err["type"], msg, err.get("ctx"))})
-    return _error(422, "validation_error", "Проверьте введённые данные", details)
+        details.append({"field": ".".join(loc), "message": _message(err["type"], msg, err.get("ctx"))})
+    return _error(422, "validation_error", "Please check the data you entered", details)
 
 
-def _ru(kind: str, msg: str, ctx: dict | None) -> str:
+def _message(kind: str, msg: str, ctx: dict | None) -> str:
     if kind == "greater_than_equal" or kind == "less_than_equal":
-        return "Возраст должен быть от 0 до 120 лет"
+        return "Age must be between 0 and 120"
     if kind in ("int_parsing", "int_type"):
-        return "Укажите целое число"
+        return "Enter a whole number"
     if kind in ("too_short", "too_long"):
-        return "В заказе должно быть от 1 до 4 участников"
+        return "An order must have from 1 to 4 participants"
     if kind == "missing":
-        return "Обязательное поле"
+        return "This field is required"
     if kind == "string_type":
-        return "Укажите текст"
+        return "Enter text"
     return msg
 
 
 @app.exception_handler(Exception)
 async def unhandled_handler(_: Request, exc: Exception):
-    return _error(500, "internal_error", "Внутренняя ошибка сервера. Попробуйте позже.")
+    return _error(500, "internal_error", "Internal server error. Please try again later.")
 
 
 @app.get("/health", include_in_schema=False)

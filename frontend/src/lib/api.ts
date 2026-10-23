@@ -19,7 +19,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(`${base}/api/v1${path}`, { cache: "no-store", ...init });
   } catch {
-    throw new ApiError(0, "network", "Нет связи с сервером. Проверьте подключение и попробуйте снова.");
+    throw new ApiError(0, "network", "Cannot reach the server. Check your connection and try again.");
   }
   if (!res.ok) {
     let body: ApiErrorBody | null = null;
@@ -31,7 +31,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(
       res.status,
       body?.error.code ?? "unknown",
-      body?.error.message ?? "Не удалось выполнить запрос. Попробуйте позже.",
+      body?.error.message ?? "The request failed. Please try again later.",
       body?.error.details,
     );
   }

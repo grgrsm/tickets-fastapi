@@ -2,15 +2,15 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Бронирование билетов",
-  description: "Забронируйте билеты на мероприятие онлайн",
+  title: "Ticket booking",
+  description: "Book event tickets online",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#895aeb" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

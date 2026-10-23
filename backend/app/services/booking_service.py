@@ -10,12 +10,11 @@ from app.services import pricing
 def validate_participants(ages: list[int]) -> None:
     if not pricing.MIN_PARTICIPANTS <= len(ages) <= pricing.MAX_PARTICIPANTS:
         raise BookingRuleViolation(
-            f"В заказе должно быть от {pricing.MIN_PARTICIPANTS} до {pricing.MAX_PARTICIPANTS} участников"
+            f"An order must have from {pricing.MIN_PARTICIPANTS} to {pricing.MAX_PARTICIPANTS} participants"
         )
     if not pricing.has_required_adult(ages):
         raise BookingRuleViolation(
-            f"Дети младше {pricing.CHILD_AGE_LIMIT} лет допускаются только в сопровождении участника "
-            f"старше {pricing.ADULT_AGE - 1} лет"
+            f"Children under {pricing.CHILD_AGE_LIMIT} can attend only with a participant aged {pricing.ADULT_AGE} or older"
         )
 
 
@@ -28,11 +27,10 @@ async def create_booking(session: AsyncSession, data: BookingCreate) -> Booking:
     async with session.begin():
         event = await event_repository.get_event_for_update(session, data.event_id)
         if event is None:
-            raise EventNotFound("Событие не найдено")
+            raise EventNotFound("Event not found")
         if event.capacity - event.booked_tickets < count:
             raise InsufficientCapacity(
-                "К сожалению, свободных мест больше нет. Ваши данные сохранены — "
-                "уменьшите количество участников или попробуйте позже."
+                "Sorry, there are not enough seats left. Your details are saved — reduce the number of participants or try again later."
             )
         booking = Booking(
             event_id=event.id,

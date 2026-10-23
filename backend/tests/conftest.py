@@ -14,7 +14,7 @@ from app.main import app
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+asyncpg://tickets:tickets@localhost:5432/tickets_test"
 )
-assert TEST_DB_URL.rsplit("/", 1)[-1].endswith("_test"), "TEST_DATABASE_URL должен указывать на базу *_test"
+assert TEST_DB_URL.rsplit("/", 1)[-1].endswith("_test"), "TEST_DATABASE_URL must point to a database whose name ends with _test"
 
 EVENT_CAPACITY = 5
 
@@ -37,7 +37,7 @@ def sessionmaker(engine):
 @pytest.fixture
 async def event_id(sessionmaker) -> int:
     async with sessionmaker() as s, s.begin():
-        e = Event(name="Тест", description="d", event_date=datetime.now(timezone.utc), venue="v",
+        e = Event(name="Test", description="d", event_date=datetime.now(timezone.utc), venue="v",
                   capacity=EVENT_CAPACITY, booked_tickets=0)
         s.add(e)
         await s.flush()

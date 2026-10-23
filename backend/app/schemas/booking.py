@@ -20,9 +20,9 @@ class ParticipantIn(BaseModel):
     def clean_name(cls, v: str) -> str:
         v = re.sub(r"\s+", " ", v).strip()
         if not v:
-            raise ValueError("Укажите имя участника")
+            raise ValueError("Enter the participant's name")
         if len(v) > 200:
-            raise ValueError("Имя слишком длинное")
+            raise ValueError("Name is too long")
         return v
 
 
@@ -39,7 +39,7 @@ class BookingCreate(BaseModel):
         try:
             return str(_email_adapter.validate_python(v.strip())).lower()
         except Exception:
-            raise ValueError("Укажите корректный адрес электронной почты")
+            raise ValueError("Enter a valid email address")
 
 
 class ParticipantOut(BaseModel):

@@ -5,10 +5,10 @@ import type { ParticipantDraft, Pricing } from "@/types/api";
 
 type Props = { participants: ParticipantDraft[]; pricing: Pricing; email?: string; heading?: string };
 
-export function OrderSummary({ participants, pricing, email, heading = "Ваш заказ" }: Props) {
+export function OrderSummary({ participants, pricing, email, heading = "Your order" }: Props) {
   const rows = participants.map((p, i) => {
     const age = parseAge(p.age);
-    return { key: p.key, name: p.name.trim() || `Участник ${i + 1}`, age, ticket: age !== null ? classifyAge(age, pricing) : null };
+    return { key: p.key, name: p.name.trim() || `Participant ${i + 1}`, age, ticket: age !== null ? classifyAge(age, pricing) : null };
   });
   const total = rows.reduce((s, r) => s + (r.ticket?.price ?? 0), 0);
 
@@ -36,7 +36,7 @@ export function OrderSummary({ participants, pricing, email, heading = "Ваш �
         )}
         <div className="mt-2 flex items-center justify-between border-t border-ink/10 pt-4">
           <p className="text-sm text-ink-soft">{pluralParticipants(rows.length)}</p>
-          <p className="text-sm text-ink-soft">Итого <span className="ml-2 text-2xl font-bold text-ink">{formatRub(total)}</span></p>
+          <p className="text-sm text-ink-soft">Total <span className="ml-2 text-2xl font-bold text-ink">{formatRub(total)}</span></p>
         </div>
       </div>
     </section>

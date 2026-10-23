@@ -22,5 +22,5 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
 async def get_booking(booking_id: int, session: AsyncSession = Depends(get_session)):
     booking = await booking_repository.get_booking(session, booking_id)
     if booking is None:
-        raise BookingNotFound("Бронирование не найдено")
+        raise BookingNotFound("Booking not found")
     return booking

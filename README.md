@@ -1,70 +1,72 @@
-# Бронирование билетов на мероприятие
+# Event Ticket Booking
 
-Полнофункциональный MVP: пошаговое бронирование (участники → контакты → проверка → результат), расчёт цен и все правила на backend, атомарное бронирование с блокировкой строки события в PostgreSQL.
+A full-stack MVP: step-by-step booking (participants → contact → review → result), server-side pricing and rules, and an atomic booking transaction that locks the event row in PostgreSQL. The demo event takes place in New York.
 
-## Возможности
-- 1–4 участника, имя и возраст, автоматический тип билета: полный 2 000 ₽ (14+), детский 1 000 ₽ (младше 14).
-- Ребёнок младше 14 допускается только при наличии участника 18+ в том же заказе (17 лет — не взрослый).
-- Один контактный email на заказ (нормализуется: trim + нижний регистр), возраст 0–120, имена обрезаются и не бывают пустыми.
-- Редактирование данных до подтверждения, защита от двойной отправки, экраны загрузки/ошибки/успеха/«мест нет».
-- API: `GET /api/v1/events`, `GET /api/v1/events/{id}`, `POST /api/v1/bookings` (201/404/409/422), `GET /api/v1/bookings/{id}`. Ошибки: `{"error": {"code", "message", "details"?}}`.
-- Интерфейс полностью на русском, палитра: `#895aeb` (акцент: шапка, кнопки, вкладки), `#111013` (текст), `#fefeff` (фон страницы и карточки).
+## Features
+- 1–4 participants, each with a name and age. The ticket type is derived from age: full 2,000 ₽ (14+), child 1,000 ₽ (under 14).
+- A child under 14 can attend only if the same booking includes a participant aged 18+ (a 17-year-old does not count as an adult).
+- One contact email per order (normalized: trimmed and lowercased), age 0–120, names are trimmed and cannot be empty.
+- Participants and contact details can be edited before confirmation. Duplicate submissions are blocked. Loading, error, success and sold-out states are handled.
+- API: `GET /api/v1/events`, `GET /api/v1/events/{id}`, `POST /api/v1/bookings` (201/404/409/422), `GET /api/v1/bookings/{id}`. Errors have one shape: `{"error": {"code", "message", "details"?}}`.
+- The UI is fully in English. Palette: `#895aeb` (accent: header, buttons, tabs), `#111013` (text), `#fefeff` (page and card background). The event time is shown in New York time.
 
-## Стек
-Next.js 15 (App Router), React 19, TypeScript strict, Tailwind 3 — без лишних библиотек (форма простая, RHF/Zod не нужны). FastAPI, Pydantic v2, SQLAlchemy 2 async + asyncpg, Alembic, PostgreSQL 16, pytest + HTTPX. Версии зафиксированы (`requirements.txt`, `frontend/package-lock.json`).
+## Stack
+Next.js 15 (App Router), React 19, strict TypeScript, Tailwind 3 — no extra libraries (the form is simple, so React Hook Form and Zod are not needed). FastAPI, Pydantic v2, SQLAlchemy 2 async + asyncpg, Alembic, PostgreSQL 16, pytest + HTTPX. Versions are pinned (`requirements.txt`, `frontend/package-lock.json`).
 
-## Запуск (нужен только Docker с Compose)
+## Run (only Docker with Compose is required)
 ```bash
-cp .env.example .env        # при желании поменяйте пароль
+cp .env.example .env        # change the password if you like
 docker compose up --build
 ```
-Миграции (`alembic upgrade head`) и идемпотентное сидирование демо-события выполняются автоматически при старте backend (`backend/entrypoint.sh`). Вручную:
+Migrations (`alembic upgrade head`) and the idempotent demo-event seed run automatically when the backend starts (`backend/entrypoint.sh`). To run them manually:
 ```bash
 docker compose exec backend alembic upgrade head
 docker compose exec backend python -m app.seed
 ```
-- Приложение: http://localhost:3000
+- App: http://localhost:3000
 - API: http://localhost:8000/api/v1/events
 - Swagger: http://localhost:8000/docs
 
-## Демонстрация
-- **Успешная бронь:** добавьте участника (например, Анна, 30), укажите email, подтвердите — появится номер брони.
-- **«Мест нет»:** оставьте одно место и закажите двоих:
+## Demo
+- **Successful booking:** add a participant (for example Anna, 30), enter an email and confirm. A booking number appears.
+- **Sold out:** leave one seat and order two:
   ```bash
-  docker compose exec backend python -m app.seed --set-booked 19   # вместимость по умолчанию 20
+  docker compose exec backend python -m app.seed --set-booked 19   # default capacity is 20
   ```
-  Закажите 2 участников — реальная транзакция вернёт 409, введённые данные сохранятся. Сброс: `--set-booked 0`. Команда доступна только из консоли контейнера, публичного endpoint для изменения вместимости нет. Другая вместимость: `DEMO_EVENT_CAPACITY` в `.env` (применяется при создании события, т. е. на чистой БД: `docker compose down -v`).
+  Order 2 participants. The real transaction returns 409 and the entered data is kept. Reset with `--set-booked 0`. The command is available only from the container console; there is no public endpoint that changes capacity. For another capacity set `DEMO_EVENT_CAPACITY` in `.env` (applied when the event is created, i.e. on a fresh database: `docker compose down -v`).
 
-## Тесты backend
+## Backend tests
 ```bash
 docker compose run --rm --entrypoint pytest backend -q
 ```
-Тесты используют отдельную базу `tickets_test` (создаётся скриптом `db/init`; на уже существующем томе создайте её: `docker compose exec db createdb -U tickets tickets_test`). Конфигурация тестов отказывается работать с базой, имя которой не оканчивается на `_test`.
+Tests use a separate `tickets_test` database (created by the `db/init` script; on an existing volume create it with `docker compose exec db createdb -U tickets tickets_test`). The test configuration refuses to run against a database whose name does not end with `_test`.
 
-## Транзакция и конкурентность
-`booking_service.create_booking`: валидация и расчёт цен → `async with session.begin()` → `SELECT … FOR UPDATE` строки события → проверка `capacity - booked_tickets >= N` → вставка брони и участников, `booked_tickets += N` → коммит. Любое исключение откатывает всё. Параллельные запросы выстраиваются в очередь на блокировке строки, источник истины — `events.booked_tickets` (+ CHECK `booked_tickets <= capacity` как страховка).
+## Transaction and concurrency
+`booking_service.create_booking`: validate and price → `async with session.begin()` → `SELECT … FOR UPDATE` on the event row → check `capacity - booked_tickets >= N` → insert the booking and participants, `booked_tickets += N` → commit. Any exception rolls everything back. Concurrent requests queue on the row lock. `events.booked_tickets` is the single source of truth, with a CHECK constraint `booked_tickets <= capacity` as a safety net.
 
-## Структура и где менять
+## Structure and where to change things
 ```
 backend/app/{api/routes, schemas, services, repositories, db/models, seed.py, exceptions.py}
 backend/alembic, backend/tests
 frontend/src/{app, components/booking, lib, types}
 ```
-| Что изменить | Где |
+| What to change | Where |
 |---|---|
-| Цены, порог детского возраста, лимит участников, возраст взрослого | `backend/app/services/pricing.py` (константы) |
-| Правило сопровождения | `pricing.has_required_adult` + сообщение в `booking_service.validate_participants` |
-| Вместимость | `DEMO_EVENT_CAPACITY` в `.env` для нового события или `python -m app.seed --set-booked` для демо; в коде — `app/seed.py` |
-| Новое поле заказа | схема `schemas/booking.py`, модель `db/models/booking.py` + миграция Alembic, `booking_service.py`, тип `frontend/src/types/api.ts`, форма в `components/booking/` |
+| Prices, child age threshold, participant limit, adult age | `backend/app/services/pricing.py` (constants) |
+| Accompaniment rule | `pricing.has_required_adult` + the message in `booking_service.validate_participants` |
+| Capacity | `DEMO_EVENT_CAPACITY` in `.env` for a new event, or `python -m app.seed --set-booked` for the demo; in code — `app/seed.py` |
+| Event name, description, venue | constants at the top of `backend/app/seed.py`; run `python -m app.seed` to refresh the existing event |
+| New order field | schema `schemas/booking.py`, model `db/models/booking.py` + Alembic migration, `booking_service.py`, type `frontend/src/types/api.ts`, form in `components/booking/` |
 
-Frontend получает цены и пороги из API (`pricing` в событии), поэтому дублируются только простые проверки для мгновенной обратной связи (`frontend/src/lib/validation.ts`).
+The frontend receives prices and thresholds from the API (`pricing` on the event), so only simple checks are duplicated for instant feedback (`frontend/src/lib/validation.ts`).
 
-## Результаты проверки (реально выполнено в среде разработки)
-- Backend: `pytest` на реальном PostgreSQL 16 — **21 тест пройден** (цены, границы возраста 13/14, правило взрослого, валидация, поддельные цены, 409 без частичных записей, 8 параллельных заказов на 5 мест → ровно 5×201 и 3×409).
-- Frontend: `tsc --noEmit` и `next build` — без ошибок; SSR-страница получает событие из живого API; CORS preflight проверен.
-- Сценарий «мест нет» через `python -m app.seed --set-booked 19` и заказ двух участников → HTTP 409 от реальной транзакции.
+## Verification results (actually run in the development environment)
+- Backend: `pytest` against real PostgreSQL 16 — **21 tests passed** (prices, the 13/14 age boundary, the adult rule, validation, forged prices, 409 without partial records, 8 parallel orders for 5 seats → exactly 5×201 and 3×409).
+- Frontend: `tsc --noEmit` and `next build` pass; the server-rendered page loads the event from the live API; CORS preflight checked.
+- Sold-out scenario via `python -m app.seed --set-booked 19` and an order for two participants → HTTP 409 from the real transaction.
 
-## Ограничения
-- **Docker в среде разработки отсутствовал**, поэтому `docker compose up` и Dockerfile **не запускались**; backend и frontend проверены напрямую с локальным PostgreSQL. Перед демонстрацией выполните `docker compose up --build`.
-- Интерфейс прогнан в headless Chromium (десктоп 1280 px и мобильный 360 px): весь сценарий «участник → email → проверка → подтверждение» проходит, горизонтального переполнения нет. Это ручной прогон, автотестов фронтенда в проекте нет.
-- Нет оплаты, аккаунтов, писем и временного резервирования мест (по условию).
+## Limitations
+- **Docker was not available in the development environment**, so `docker compose up` and the Dockerfiles were **not run**; backend and frontend were checked directly against a local PostgreSQL. Run `docker compose up --build` before a demo.
+- The UI was exercised in headless Chromium (desktop 1280 px and mobile 360 px): the full flow participant → email → review → confirmation works and there is no horizontal overflow. This was a manual run; the project has no frontend automated tests.
+- No payments, accounts, emails or temporary seat reservations (by specification).
+- Prices stay in rubles (₽) as in the original specification, even though the demo event is in New York.

@@ -12,17 +12,17 @@ export function parseAge(raw: string): number | null {
 export function validateParticipants(list: ParticipantDraft[], p: Pricing) {
   const fields: ParticipantErrors[] = list.map((d) => {
     const e: ParticipantErrors = {};
-    if (!d.name.trim()) e.name = "Укажите имя участника";
+    if (!d.name.trim()) e.name = "Enter the participant's name";
     const age = parseAge(d.age);
-    if (d.age.trim() === "") e.age = "Укажите возраст";
-    else if (age === null || age < MIN_AGE || age > MAX_AGE) e.age = `Возраст — число от ${MIN_AGE} до ${MAX_AGE}`;
+    if (d.age.trim() === "") e.age = "Enter the age";
+    else if (age === null || age < MIN_AGE || age > MAX_AGE) e.age = `Age must be a number from ${MIN_AGE} to ${MAX_AGE}`;
     return e;
   });
   const ages = list.map((d) => parseAge(d.age)).filter((a): a is number => a !== null);
   const hasChild = ages.some((a) => a < p.child_age_limit);
   const hasAdult = ages.some((a) => a >= p.adult_age);
   const form = hasChild && !hasAdult
-    ? `Дети младше ${p.child_age_limit} лет допускаются только в сопровождении участника ${p.adult_age}+. Добавьте взрослого.`
+    ? `Children under ${p.child_age_limit} can attend only with a participant aged ${p.adult_age}+. Add an adult.`
     : undefined;
   const ok = fields.every((e) => !e.name && !e.age) && !form;
   return { fields, form, ok };
@@ -31,7 +31,7 @@ export function validateParticipants(list: ParticipantDraft[], p: Pricing) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function validateEmail(email: string): string | undefined {
-  if (!email.trim()) return "Укажите адрес электронной почты";
-  if (!EMAIL_RE.test(email.trim())) return "Проверьте адрес: он должен выглядеть как name@example.com";
+  if (!email.trim()) return "Enter an email address";
+  if (!EMAIL_RE.test(email.trim())) return "Check the address: it should look like name@example.com";
   return undefined;
 }
